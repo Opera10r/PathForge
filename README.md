@@ -35,9 +35,9 @@ cd PathForge
 ./install.sh
 ```
 
-After install, right-click any file in Finder → **Quick Actions** → pick a PathForge format.
+The installer will open **System Settings** automatically. Toggle ON all 7 PathForge actions under **Finder Extensions**, then press Enter to finish.
 
-If the actions don't appear, go to **System Settings → Privacy & Security → Extensions → Finder Extensions** and enable them.
+After that, right-click any file or folder in Finder → **Quick Actions** → pick a PathForge format.
 
 ## Uninstall
 

@@ -353,6 +353,32 @@ echo "→ Refreshing Finder services..."
 /System/Library/CoreServices/pbs -flush 2>/dev/null || true
 killall Finder 2>/dev/null || true
 
+# ─── Enable Extensions ────────────────────────────────────────────────────────
+
+echo ""
+echo "╔══════════════════════════════════════╗"
+echo "║         Almost there!               ║"
+echo "╠══════════════════════════════════════╣"
+echo "║                                     ║"
+echo "║  macOS requires you to enable the   ║"
+echo "║  Quick Actions manually.            ║"
+echo "║                                     ║"
+echo "║  Opening System Settings now...     ║"
+echo "║                                     ║"
+echo "║  1. Click 'Finder Extensions'       ║"
+echo "║  2. Toggle ON all PathForge items   ║"
+echo "║  3. Close System Settings           ║"
+echo "║                                     ║"
+echo "╚══════════════════════════════════════╝"
+echo ""
+
+# Open System Settings to the Extensions pane
+open "x-apple.systempreferences:com.apple.ExtensionsPreferences" 2>/dev/null || \
+    open "x-apple.systempreferences:com.apple.preference.extensions" 2>/dev/null || \
+    open "/System/Library/PreferencePanes/Extensions.prefPane" 2>/dev/null || true
+
+read -p "Press Enter after enabling the extensions... "
+
 # ─── Done ─────────────────────────────────────────────────────────────────────
 
 echo ""
@@ -366,8 +392,8 @@ echo "║                                     ║"
 echo "║  Free: 3 copies/day                 ║"
 echo "║  Unlimited: \$1/month                ║"
 echo "║                                     ║"
-echo "║  If Quick Actions don't appear:     ║"
-echo "║  System Settings → Extensions →     ║"
-echo "║  Finder → enable PathForge actions  ║"
+echo "║  CLI commands:                      ║"
+echo "║    pathforge status                 ║"
+echo "║    pathforge activate <key>         ║"
 echo "║                                     ║"
 echo "╚══════════════════════════════════════╝"
