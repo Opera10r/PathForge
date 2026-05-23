@@ -22,6 +22,20 @@ mkdir -p "$INSTALL_DIR"
 cp "$SCRIPT_DIR/src/pathforge.sh" "$INSTALL_DIR/pathforge.sh"
 chmod +x "$INSTALL_DIR/pathforge.sh"
 
+# ─── CLI symlink ──────────────────────────────────────────────────────────────
+
+echo "→ Installing 'pathforge' command..."
+mkdir -p "$HOME/.local/bin"
+ln -sf "$INSTALL_DIR/pathforge.sh" "$HOME/.local/bin/pathforge"
+
+# Check if ~/.local/bin is in PATH
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    echo ""
+    echo "  NOTE: Add ~/.local/bin to your PATH by adding this to your ~/.zshrc:"
+    echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo ""
+fi
+
 # ─── Create support directory ─────────────────────────────────────────────────
 
 mkdir -p "$SUPPORT_DIR"

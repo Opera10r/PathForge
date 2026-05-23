@@ -13,6 +13,8 @@ SUPPORT_DIR="$HOME/Library/Application Support/PathForge"
 USAGE_FILE="$SUPPORT_DIR/usage"
 DAILY_LIMIT=3
 LICENSE_FILE="$SUPPORT_DIR/license"
+LICENSE_KEY_FILE="$SUPPORT_DIR/license_key"
+API_URL="https://pathforge-worker.opera10r.workers.dev"
 
 # ─── Setup ────────────────────────────────────────────────────────────────────
 
@@ -204,12 +206,117 @@ format_all() {
     format_url_encoded "$filepath"
 }
 
+# ─── License Activation ───────────────────────────────────────────────────────
+
+activate_license() {
+    local key="$1"
+
+    if [[ -z "$key" ]]; then
+        echo "Usage: pathforge activate <license_key>"
+        echo "  e.g. pathforge activate pf_abc123..."
+        exit 1
+    fi
+
+    if [[ ! "$key" == pf_* ]]; then
+        echo "Error: License keys start with pf_"
+        exit 1
+    fi
+
+    echo "Validating license key..."
+
+    local response
+    response=$(curl -s -X POST "$API_URL/validate-license" \
+        -H "Content-Type: application/json" \
+        -d "{\"license_key\": \"$key\"}" 2>/dev/null)
+
+    if [[ -z "$response" ]]; then
+        echo "Error: Could not reach license server. Check your internet connection."
+        exit 1
+    fi
+
+    local valid
+    valid=$(echo "$response" | python3 -c "import sys,json; print(json.load(sys.stdin).get('valid', False))" 2>/dev/null)
+
+    if [[ "$valid" == "True" ]]; then
+        echo "$key" > "$LICENSE_KEY_FILE"
+        echo "active" > "$LICENSE_FILE"
+        local email
+        email=$(echo "$response" | python3 -c "import sys,json; print(json.load(sys.stdin).get('email',''))" 2>/dev/null)
+        echo ""
+        echo "License activated! ($email)"
+        echo "Unlimited path copies unlocked."
+    else
+        echo "Error: Invalid or expired license key."
+        exit 1
+    fi
+}
+
+deactivate_license() {
+    rm -f "$LICENSE_FILE" "$LICENSE_KEY_FILE"
+    echo "License deactivated. Back to free tier (3 copies/day)."
+}
+
+show_status() {
+    echo "PathForge v1.0.0"
+    echo ""
+    if [[ -f "$LICENSE_FILE" ]] && [[ "$(cat "$LICENSE_FILE")" == "active" ]]; then
+        local key
+        key=$(cat "$LICENSE_KEY_FILE" 2>/dev/null || echo "unknown")
+        echo "License: Active (${key:0:10}...)"
+        echo "Copies:  Unlimited"
+    else
+        local today count remaining
+        today=$(date +%Y-%m-%d)
+        if [[ -f "$USAGE_FILE" ]]; then
+            local stored_date stored_count
+            stored_date=$(cut -d: -f1 "$USAGE_FILE")
+            stored_count=$(cut -d: -f2 "$USAGE_FILE")
+            if [[ "$stored_date" == "$today" ]]; then
+                count=$stored_count
+            else
+                count=0
+            fi
+        else
+            count=0
+        fi
+        remaining=$(( DAILY_LIMIT - count ))
+        if (( remaining < 0 )); then remaining=0; fi
+        echo "License: Free tier"
+        echo "Today:   $count/$DAILY_LIMIT copies used ($remaining remaining)"
+    fi
+}
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 main() {
-    if [[ $# -lt 2 ]]; then
-        echo "Usage: pathforge.sh <format> <file1> [file2] ..."
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: pathforge <format> <file1> [file2] ..."
+        echo "       pathforge activate <license_key>"
+        echo "       pathforge deactivate"
+        echo "       pathforge status"
+        echo ""
         echo "Formats: absolute, shell_escaped, git_relative, quoted, cd_command, url_encoded, all_formats"
+        exit 1
+    fi
+
+    # Handle subcommands
+    case "$1" in
+        activate)
+            activate_license "${2:-}"
+            exit 0
+            ;;
+        deactivate)
+            deactivate_license
+            exit 0
+            ;;
+        status)
+            show_status
+            exit 0
+            ;;
+    esac
+
+    if [[ $# -lt 2 ]]; then
+        echo "Usage: pathforge <format> <file1> [file2] ..."
         exit 1
     fi
 

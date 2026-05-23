@@ -56,7 +56,19 @@ cd PathForge
 ## Pricing
 
 - **Free**: 3 copies per day
-- **Unlimited**: $1/month
+- **Unlimited**: [$1/month](https://buy.stripe.com/dRmfZg4YO4hO2I84vA2cg01)
+
+To activate after purchase:
+
+```bash
+pathforge activate <your_license_key>
+```
+
+Check your status anytime:
+
+```bash
+pathforge status
+```
 
 ## Requirements
 
