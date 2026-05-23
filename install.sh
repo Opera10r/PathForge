@@ -47,49 +47,64 @@ create_workflow() {
     local format="$2"
     local workflow_dir="$SERVICES_DIR/PathForge — ${name}.workflow"
 
-    mkdir -p "$workflow_dir/Contents"
+    # Remove old version if exists
+    rm -rf "$workflow_dir"
+    mkdir -p "$workflow_dir/Contents/QuickLook"
 
-    # Info.plist — identifies this as a Quick Action (Service)
-    cat > "$workflow_dir/Contents/Info.plist" << 'INFOPLIST'
+    # Copy thumbnail if available
+    if [[ -f "$SCRIPT_DIR/src/Thumbnail.png" ]]; then
+        cp "$SCRIPT_DIR/src/Thumbnail.png" "$workflow_dir/Contents/QuickLook/Thumbnail.png"
+    fi
+
+    # Generate UUIDs
+    local uuid1 uuid2 uuid3
+    uuid1=$(uuidgen)
+    uuid2=$(uuidgen)
+    uuid3=$(uuidgen)
+
+    # Info.plist — matching Automator's exact format for macOS 26+
+    cat > "$workflow_dir/Contents/Info.plist" << INFOPLIST
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>NSServices</key>
-    <array>
-        <dict>
-            <key>NSMenuItem</key>
-            <dict>
-                <key>default</key>
-                <string>PathForge — WORKFLOW_NAME</string>
-            </dict>
-            <key>NSMessage</key>
-            <string>runWorkflowAsService</string>
-            <key>NSSendFileTypes</key>
-            <array>
-                <string>public.item</string>
-            </array>
-        </dict>
-    </array>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSBackgroundColorName</key>
+			<string>background</string>
+			<key>NSIconName</key>
+			<string>NSActionTemplate</string>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>PathForge — ${name}</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>runWorkflowAsService</string>
+			<key>NSRequiredContext</key>
+			<dict>
+				<key>NSApplicationIdentifier</key>
+				<string>com.apple.finder</string>
+			</dict>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>public.item</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
 INFOPLIST
 
-    # Replace placeholder with actual name
-    sed -i '' "s/WORKFLOW_NAME/${name}/" "$workflow_dir/Contents/Info.plist"
-
-    # document.wflow — the actual Automator workflow
-    local script_content="for f in \"\$@\"; do echo \"\$f\"; done | xargs \\\"$INSTALL_DIR/pathforge.sh\\\" \\\"$format\\\""
-
+    # document.wflow — exact format from a working Automator-generated workflow
     cat > "$workflow_dir/Contents/document.wflow" << WFLOW
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>AMApplicationBuild</key>
-	<string>523</string>
+	<string>534</string>
 	<key>AMApplicationVersion</key>
 	<string>2.10</string>
 	<key>AMDocumentVersion</key>
@@ -107,7 +122,7 @@ INFOPLIST
 					<true/>
 					<key>Types</key>
 					<array>
-						<string>com.apple.cocoa.path</string>
+						<string>com.apple.cocoa.string</string>
 					</array>
 				</dict>
 				<key>AMActionVersion</key>
@@ -115,15 +130,6 @@ INFOPLIST
 				<key>AMApplication</key>
 				<array>
 					<string>Automator</string>
-				</array>
-				<key>AMCategory</key>
-				<string>AMCategoryUtilities</string>
-				<key>AMIconName</key>
-				<string>Automator</string>
-				<key>AMKeywords</key>
-				<array>
-					<string>Shell</string>
-					<string>Script</string>
 				</array>
 				<key>AMParameterProperties</key>
 				<dict>
@@ -160,7 +166,7 @@ INFOPLIST
 					<key>inputMethod</key>
 					<integer>1</integer>
 					<key>shell</key>
-					<string>/bin/bash</string>
+					<string>/bin/zsh</string>
 					<key>source</key>
 					<string></string>
 				</dict>
@@ -179,27 +185,143 @@ INFOPLIST
 				<key>Class Name</key>
 				<string>RunShellScriptAction</string>
 				<key>InputUUID</key>
-				<string>$(uuidgen)</string>
+				<string>${uuid1}</string>
 				<key>Keywords</key>
 				<array>
 					<string>Shell</string>
 					<string>Script</string>
+					<string>Command</string>
+					<string>Run</string>
+					<string>Unix</string>
 				</array>
 				<key>OutputUUID</key>
-				<string>$(uuidgen)</string>
+				<string>${uuid2}</string>
 				<key>UUID</key>
-				<string>$(uuidgen)</string>
+				<string>${uuid3}</string>
 				<key>UnlocalizedApplications</key>
 				<array>
 					<string>Automator</string>
 				</array>
+				<key>arguments</key>
+				<dict>
+					<key>0</key>
+					<dict>
+						<key>default value</key>
+						<integer>0</integer>
+						<key>name</key>
+						<string>inputMethod</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>0</string>
+					</dict>
+					<key>1</key>
+					<dict>
+						<key>default value</key>
+						<false/>
+						<key>name</key>
+						<string>CheckedForUserDefaultShell</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>1</string>
+					</dict>
+					<key>2</key>
+					<dict>
+						<key>default value</key>
+						<string></string>
+						<key>name</key>
+						<string>source</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>2</string>
+					</dict>
+					<key>3</key>
+					<dict>
+						<key>default value</key>
+						<string></string>
+						<key>name</key>
+						<string>COMMAND_STRING</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>3</string>
+					</dict>
+					<key>4</key>
+					<dict>
+						<key>default value</key>
+						<string>/bin/sh</string>
+						<key>name</key>
+						<string>shell</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>4</string>
+					</dict>
+				</dict>
+				<key>conversionLabel</key>
+				<integer>0</integer>
+				<key>isViewVisible</key>
+				<integer>1</integer>
+				<key>location</key>
+				<string>309.000000:305.000000</string>
+				<key>nibPath</key>
+				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/Base.lproj/main.nib</string>
 			</dict>
+			<key>isViewVisible</key>
+			<integer>1</integer>
 		</dict>
 	</array>
 	<key>connectors</key>
 	<dict/>
 	<key>workflowMetaData</key>
 	<dict>
+		<key>applicationBundleID</key>
+		<string>com.apple.finder</string>
+		<key>applicationBundleIDsByPath</key>
+		<dict>
+			<key>/System/Library/CoreServices/Finder.app</key>
+			<string>com.apple.finder</string>
+		</dict>
+		<key>applicationPath</key>
+		<string>/System/Library/CoreServices/Finder.app</string>
+		<key>applicationPaths</key>
+		<array>
+			<string>/System/Library/CoreServices/Finder.app</string>
+		</array>
+		<key>inputTypeIdentifier</key>
+		<string>com.apple.Automator.fileSystemObject</string>
+		<key>outputTypeIdentifier</key>
+		<string>com.apple.Automator.nothing</string>
+		<key>presentationMode</key>
+		<integer>15</integer>
+		<key>processesInput</key>
+		<false/>
+		<key>serviceApplicationBundleID</key>
+		<string>com.apple.finder</string>
+		<key>serviceApplicationPath</key>
+		<string>/System/Library/CoreServices/Finder.app</string>
+		<key>serviceInputTypeIdentifier</key>
+		<string>com.apple.Automator.fileSystemObject</string>
+		<key>serviceOutputTypeIdentifier</key>
+		<string>com.apple.Automator.nothing</string>
+		<key>serviceProcessesInput</key>
+		<false/>
+		<key>systemImageName</key>
+		<string>NSActionTemplate</string>
+		<key>useAutomaticInputType</key>
+		<false/>
 		<key>workflowTypeIdentifier</key>
 		<string>com.apple.Automator.servicesMenu</string>
 	</dict>
@@ -212,6 +334,9 @@ WFLOW
 
 echo ""
 echo "→ Installing Quick Actions..."
+
+# Remove the Automator-created one (has trailing space in name)
+rm -rf "$SERVICES_DIR/PathForge — Copy Absolute Path .workflow"
 
 create_workflow "Copy Absolute Path"     "absolute"
 create_workflow "Copy Shell-Escaped"     "shell_escaped"

@@ -4,7 +4,10 @@
 # Usage: pathforge.sh <format> <file1> [file2] ...
 # Formats: absolute, shell_escaped, git_relative, quoted, cd_command, url_encoded, all_formats
 
-set -euo pipefail
+set -uo pipefail
+
+# Log errors when running inside Automator
+LOG_FILE="$HOME/Library/Application Support/PathForge/debug.log"
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -82,6 +85,9 @@ increment_usage() {
 notify() {
     local title="$1"
     local body="$2"
+    # Escape quotes and backslashes for AppleScript
+    body="${body//\\/\\\\}"
+    body="${body//\"/\\\"}"
     osascript -e "display notification \"$body\" with title \"$title\"" 2>/dev/null &
 }
 
